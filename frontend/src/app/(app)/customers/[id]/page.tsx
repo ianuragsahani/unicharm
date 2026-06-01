@@ -90,7 +90,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ id:
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {c.person.customers.map((sib) => (
+                  {c.person.customers.map((sib: any) => (
                     <li key={sib.id}>
                       <Link href={`/customers/${sib.id}`} className="flex items-center gap-2 rounded-lg border border-border p-2.5 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30">
                         <span className="h-2.5 w-2.5 rounded-full" style={{ background: sib.brand.color }} aria-hidden />
