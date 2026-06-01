@@ -1,6 +1,9 @@
 node_modules
 */node_modules
-frontend
+frontend/node_modules
+frontend/.next
+frontend/src
+frontend/public
 **/dist
 **/.env
 **/*.local
