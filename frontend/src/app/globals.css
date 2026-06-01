@@ -10,8 +10,6 @@
   }
   ::selection { @apply bg-brand-200 text-brand-900; }
 
-
-  
   /* Respect prefers-reduced-motion: shorten animations and disable parallax */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
