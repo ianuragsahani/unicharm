@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "jetro": {
+      "type": "stdio",
+      "command": "/Users/joysengupta/.jetro/runtime/node-darwin-arm64",
+      "args": [
+        "/Users/joysengupta/.jetro/mcp-server/index.js"
+      ],
+      "env": {
+        "JET_WORKSPACE": "/Users/joysengupta/Desktop/unicharm-crm",
+        "JET_API_URL": "https://api.jetro.ai",
+        "PATH": "/Users/joysengupta/.jetro/runtime:/Users/joysengupta/.antigravity/antigravity/bin:/Users/joysengupta/.nvm/versions/node/v25.9.0/bin:/Users/joysengupta/.local/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin"
+      }
+    }
+  }
+}

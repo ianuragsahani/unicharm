@@ -1,0 +1,25 @@
+{
+  "name": "unicharm-crm",
+  "version": "0.2.0",
+  "private": true,
+  "workspaces": [
+    "database",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n db,backend,frontend -c green,cyan,magenta \"npm:db:generate\" \"npm:dev -w backend\" \"npm:dev -w frontend\"",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w database && npm run build -w backend && npm run build -w frontend",
+    "db:push": "npm run db:push -w database",
+    "db:seed": "npm run db:seed -w database",
+    "db:reset": "npm run db:reset -w database",
+    "db:generate": "npm run generate -w database",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3"
+  }
+}

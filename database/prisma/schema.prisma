@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =================== Identity / RBAC ===================
+
+// Role values: SUPER_ADMIN | BRAND_ADMIN | MARKETER | ANALYST | AGENT
+// (SQLite — no native enums; enforced in app layer)
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  role         String       @default("MARKETER")
+  active       Boolean      @default(true)
+  brandAccess  BrandAccess[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Brand {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  color       String
+  customers   Customer[]
+  segments    Segment[]
+  campaigns   Campaign[]
+  journeys    Journey[]
+  templates   WhatsAppTemplate[]
+  tiers       LoyaltyTier[]
+  access      BrandAccess[]
+  createdAt   DateTime      @default(now())
+}
+
+model BrandAccess {
+  id      String @id @default(cuid())
+  userId  String
+  brandId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand   Brand  @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  @@unique([userId, brandId])
+}
+
+// =================== CDP ===================
+
+// Person = master identity stitched across brands.
+// Same email or phone across Sofy/MamyPoko/Lifree/PetCare → ONE Person.
+// Each brand-specific profile remains a Customer linked to a Person.
+model Person {
+  id            String     @id @default(cuid())
+  primaryEmail  String?    @unique
+  primaryPhone  String?    @unique
+  displayName   String
+  householdId   String?
+  totalCLTV     Float      @default(0)
+  brandCount    Int        @default(1)
+  customers     Customer[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  @@index([primaryEmail])
+  @@index([primaryPhone])
+}
+
+model Customer {
+  id           String     @id @default(cuid())
+  brandId      String
+  brand        Brand      @relation(fields: [brandId], references: [id])
+  personId     String?
+  person       Person?    @relation(fields: [personId], references: [id])
+  externalId   String?
+  name         String
+  email        String?
+  phone        String?
+  city         String?
+  state        String?
+  country      String     @default("IN")
+  gender       String?
+  ageBand      String?
+  source       String?    // website, app, whatsapp, offline
+  lifecycle    String     @default("NEW") // NEW, ACTIVE, AT_RISK, CHURNED, VIP
+  cltv         Float      @default(0)
+  totalOrders  Int        @default(0)
+  lastOrderAt  DateTime?
+  churnScore   Float      @default(0)
+  consent      Consent?
+  events       Event[]
+  orders       Order[]
+  loyaltyAccount LoyaltyAccount?
+  segmentMembers SegmentMember[]
+  messages     Message[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  @@index([brandId, lifecycle])
+  @@index([brandId, email])
+  @@index([brandId, phone])
+  @@index([personId])
+}
+
+model Consent {
+  id          String   @id @default(cuid())
+  customerId  String   @unique
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  email       Boolean  @default(false)
+  sms         Boolean  @default(false)
+  whatsapp    Boolean  @default(false)
+  push        Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model Event {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String   // page_view, add_to_cart, purchase, app_open, email_open, whatsapp_click
+  payload    String?  // JSON string
+  occurredAt DateTime @default(now())
+  @@index([customerId, type, occurredAt])
+}
+
+model Order {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  amount     Float
+  items      Int      @default(1)
+  channel    String   @default("web")
+  status     String   @default("paid")
+  createdAt  DateTime @default(now())
+  @@index([customerId, createdAt])
+}
+
+// =================== Segmentation ===================
+
+model Segment {
+  id          String   @id @default(cuid())
+  brandId     String
+  brand       Brand    @relation(fields: [brandId], references: [id])
+  name        String
+  description String?
+  rules       String   // JSON: { all: [{field, op, value}, ...] }
+  size        Int      @default(0)
+  members     SegmentMember[]
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SegmentMember {
+  segmentId  String
+  customerId String
+  segment    Segment  @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  addedAt    DateTime @default(now())
+  @@id([segmentId, customerId])
+}
+
+// =================== Marketing Automation ===================
+
+model Campaign {
+  id          String   @id @default(cuid())
+  brandId     String
+  brand       Brand    @relation(fields: [brandId], references: [id])
+  name        String
+  channel     String   // EMAIL, SMS, WHATSAPP, PUSH
+  status      String   @default("DRAFT") // DRAFT, SCHEDULED, RUNNING, COMPLETED, PAUSED
+  segmentId   String?
+  subject     String?
+  body        String?
+  scheduledAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  variantA    String?  // JSON
+  variantB    String?  // JSON
+  sent        Int      @default(0)
+  opened      Int      @default(0)
+  clicked     Int      @default(0)
+  converted   Int      @default(0)
+  revenue     Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Journey {
+  id          String   @id @default(cuid())
+  brandId     String
+  brand       Brand    @relation(fields: [brandId], references: [id])
+  name        String
+  trigger     String   // EVENT, SEGMENT_ENTRY, SCHEDULE
+  triggerConfig String // JSON
+  graph       String   // JSON: nodes + edges (visual journey builder)
+  status      String   @default("DRAFT") // DRAFT, ACTIVE, PAUSED
+  runs        Int      @default(0)
+  conversions Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =================== WhatsApp ===================
+
+model WhatsAppTemplate {
+  id          String   @id @default(cuid())
+  brandId     String
+  brand       Brand    @relation(fields: [brandId], references: [id])
+  name        String
+  category    String   // MARKETING, UTILITY, AUTHENTICATION
+  language    String   @default("en")
+  body        String
+  status      String   @default("APPROVED")
+  createdAt   DateTime @default(now())
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  channel     String   // WHATSAPP, EMAIL, SMS, PUSH
+  direction   String   // OUT, IN
+  body        String
+  status      String   @default("SENT") // SENT, DELIVERED, READ, FAILED, REPLIED
+  templateId  String?
+  campaignId  String?
+  createdAt   DateTime @default(now())
+  @@index([customerId, channel, createdAt])
+}
+
+// =================== Loyalty ===================
+
+model LoyaltyTier {
+  id        String  @id @default(cuid())
+  brandId   String
+  brand     Brand   @relation(fields: [brandId], references: [id])
+  name      String  // Bronze, Silver, Gold, Platinum
+  minPoints Int
+  perks     String  // JSON array
+  order     Int
+}
+
+model LoyaltyAccount {
+  id          String   @id @default(cuid())
+  customerId  String   @unique
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  points      Int      @default(0)
+  tier        String   @default("Bronze")
+  totalEarned Int      @default(0)
+  totalRedeemed Int    @default(0)
+  redemptions Redemption[]
+  updatedAt   DateTime @updatedAt
+}
+
+model Redemption {
+  id        String         @id @default(cuid())
+  accountId String
+  account   LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  reward    String
+  points    Int
+  status    String         @default("FULFILLED")
+  createdAt DateTime       @default(now())
+}
+
+// =================== Audit ===================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String   // user.create, segment.update, campaign.send, etc.
+  entityType String?
+  entityId   String?
+  metadata   String?  // JSON
+  ip         String?
+  createdAt  DateTime @default(now())
+  @@index([action, createdAt])
+}
