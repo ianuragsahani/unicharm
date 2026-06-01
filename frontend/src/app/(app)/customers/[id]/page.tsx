@@ -147,7 +147,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ id:
                 <p className="text-sm text-muted">No orders yet.</p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {c.orders.map((o) => (
+                  {c.orders.map((o: any) => (
                     <li key={o.id} className="flex items-center justify-between py-2">
                       <div>
                         <p className="text-sm font-medium">{formatINR(o.amount)}</p>
@@ -170,7 +170,7 @@ export default async function CustomerDetail({ params }: { params: Promise<{ id:
             </CardHeader>
             <CardContent>
               <ol className="relative ml-3 border-l border-border pl-5 space-y-3">
-                {c.events.slice(0, 12).map((e) => (
+                {c.events.slice(0, 12).map((e: any) => (
                   <li key={e.id} className="relative">
                     <span className="absolute -left-[27px] top-1.5 h-2 w-2 rounded-full bg-brand-500" />
                     <p className="text-sm font-medium">{e.type.replace(/_/g, " ")}</p>
