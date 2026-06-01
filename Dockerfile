@@ -21,6 +21,8 @@ FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 # node_modules from builder has the generated Prisma client
 COPY --from=builder /app/node_modules ./node_modules
 
