@@ -8,8 +8,8 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently -n db,backend,frontend -c green,cyan,magenta \"npm:db:generate\" \"npm:dev -w backend\" \"npm:dev -w frontend\"",
-    "dev:backend": "npm run dev -w backend",
+    "dev": "npm run build -w database && concurrently -n backend,frontend -c cyan,magenta \"npm:dev -w backend\" \"npm:dev -w frontend\"",
+    "dev:backend": "npm run build -w database && npm run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
     "build": "npm run build -w database && npm run build -w backend && npm run build -w frontend",
     "build:backend": "npm run build -w database && npm run build -w backend",
